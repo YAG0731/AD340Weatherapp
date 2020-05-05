@@ -6,9 +6,13 @@ import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class MainActivity : AppCompatActivity() {
 
+    private val forecastRepository = ForecastRepository()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -22,29 +26,23 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this,R.string.zipcode_entry_error, Toast.LENGTH_SHORT).show()
             }
             else{
-                Toast.makeText(this,zipcode, Toast.LENGTH_SHORT).show()
+                forecastRepository.loadForecast((zipcode))
             }
 
         }
-    }
 
-    override fun onStart() {
-        super.onStart()
-    }
+        val forecastList: RecyclerView = findViewById(R.id.forecastList)
+        forecastList.layoutManager = LinearLayoutManager(this)
+        val dailyForecastAdapter = DailyForecastAdapter(){forecastItem ->
+            val msg = getString(R.string.forecast_clicked_forecast, forecastItem.temp, forecastItem.description)
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
+        forecastList.adapter = dailyForecastAdapter
 
-    override fun onResume() {
-        super.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-    }
-
-    override fun onStop() {
-        super.onStop()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
+        val weeklyForecastObserver = Observer<List<DailyForecast>> { forecastItems ->
+            //update our list adapter
+            dailyForecastAdapter.submitList(forecastItems)
+        }
+        forecastRepository.weeklyForecast.observe(this, weeklyForecastObserver)
     }
 }
