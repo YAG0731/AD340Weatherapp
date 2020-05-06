@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
 
         enterButton.setOnClickListener {
             val zipcode: String = zipcodeEditText.text.toString()
-            if(zipcode.length != 5 ){
+            if(zipcode.length != 5){
                 Toast.makeText(this,R.string.zipcode_entry_error, Toast.LENGTH_SHORT).show()
             }
             else{
