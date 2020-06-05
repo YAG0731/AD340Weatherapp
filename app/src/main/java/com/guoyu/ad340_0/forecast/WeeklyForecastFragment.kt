@@ -1,7 +1,5 @@
 package com.guoyu.ad340_0.forecast
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -13,16 +11,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.guoyu.ad340_0.*
-
-import com.guoyu.ad340_0.details.ForecastDetailsFragment
+import com.guoyu.ad340_0.api.DailyForecast
+import com.guoyu.ad340_0.api.WeeklyForecast
 
 /**
  * A simple [Fragment] subclass.
  */
 class WeeklyForecastFragment : Fragment() {
 
-    private lateinit var tempDisplaySettingManager: TempDisplaySettingManager
     private val forecastRepository = ForecastRepository()
+    private lateinit var tempDisplaySettingManager: TempDisplaySettingManager
+    private lateinit var locationRepository: LocationRepository
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,36 +34,45 @@ class WeeklyForecastFragment : Fragment() {
 
         tempDisplaySettingManager = TempDisplaySettingManager(requireContext())
 
-        val forecastList: RecyclerView = view.findViewById(R.id.forecastList)
-        forecastList.layoutManager = LinearLayoutManager(requireContext())
-        val dailyForecastAdapter = DailyForecastAdapter(tempDisplaySettingManager){forecast ->
-            showForecastDetails(forecast)
+        val dailyForecastList: RecyclerView = view.findViewById(R.id.forecastList)
+        dailyForecastList.layoutManager = LinearLayoutManager(requireContext())
+        val dailyForecastAdapter = DailyForecastListAdapter(tempDisplaySettingManager) {
+            showForecastDetails(it)
         }
-        forecastList.adapter = dailyForecastAdapter
+        dailyForecastList.adapter = dailyForecastAdapter
 
-        val weeklyForecastObserver = Observer<List<DailyForecast>> { forecastItems ->
-            //update our list adapter
-            dailyForecastAdapter.submitList(forecastItems)
+        // Create the observer which updates the UI in response to forecast updates
+        val weeklyForecastObserver = Observer<WeeklyForecast> { weeklyForecast ->
+            // update our list adapter
+            dailyForecastAdapter.submitList(weeklyForecast.daily)
         }
-        forecastRepository.weeklyForecast.observe(this, weeklyForecastObserver)
+        forecastRepository.weeklyForecast.observe(viewLifecycleOwner, weeklyForecastObserver)
 
         val locationEntryButton: FloatingActionButton = view.findViewById(R.id.locationEntryButton)
         locationEntryButton.setOnClickListener {
             showLocationEntry()
         }
 
-        forecastRepository.loadForecast(zipcode)
+        locationRepository = LocationRepository(requireContext())
+        val savedLocationObserver = Observer<Location> { savedLocation ->
+            when (savedLocation) {
+                is Location.Zipcode -> forecastRepository.loadWeeklyForecast(savedLocation.zipcode)
+            }
+        }
+        locationRepository.savedLocation.observe(viewLifecycleOwner, savedLocationObserver)
+
         return view
     }
 
     private fun showLocationEntry() {
         val action = WeeklyForecastFragmentDirections.actionWeeklyForecastFragmentToLocationEntryFragment()
         findNavController().navigate(action)
-
     }
 
-    private fun showForecastDetails(forecast: DailyForecast){
-        val action = WeeklyForecastFragmentDirections.actionWeeklyForecastFragmentToForecastDetailsFragment(forecast.temp, forecast.description)
+    private fun showForecastDetails(forecast: DailyForecast) {
+        val temp = forecast.temp.max
+        val description = forecast.weather[0].description
+        val action = WeeklyForecastFragmentDirections.actionWeeklyForecastFragmentToForecastDetailsFragment(temp, description)
         findNavController().navigate(action)
     }
 
@@ -77,8 +85,8 @@ class WeeklyForecastFragment : Fragment() {
             val args = Bundle()
             args.putString(KEY_ZIPCODE, zipcode)
             fragment.arguments = args
+
             return fragment
         }
     }
-
 }

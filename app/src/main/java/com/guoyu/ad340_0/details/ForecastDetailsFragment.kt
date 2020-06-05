@@ -25,7 +25,6 @@ class ForecastDetailsFragment : Fragment() {
         val tempText = layout.findViewById<TextView>(R.id.tempText)
         val descriptionText = layout.findViewById<TextView>(R.id.descriptionText)
 
-
         tempText.text = formatTempDisplay(args.temp, tempDisplaySettingManager.getTempDisplaySetting())
         descriptionText.text = args.description
 
