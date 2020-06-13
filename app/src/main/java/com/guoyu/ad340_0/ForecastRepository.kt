@@ -9,7 +9,8 @@ import com.guoyu.ad340_0.api.createOpenWeatherMapService
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.*
+import retrofit2.Retrofit
+import java.util.Date
 import kotlin.random.Random
 
 class ForecastRepository {
